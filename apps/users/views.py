@@ -1,9 +1,23 @@
 from django.contrib.auth import get_user_model
 from rest_framework import generics, permissions
+from rest_framework.throttling import ScopedRateThrottle
+from rest_framework_simplejwt.views import TokenObtainPairView
 
 from .serializers import RegisterSerializer, UserSerializer
 
 User = get_user_model()
+
+
+class ThrottledLoginView(TokenObtainPairView):
+    """
+    JWT login endpoint with strict per-IP rate limiting to mitigate
+    brute-force and credential-stuffing attacks.
+
+    Rate: defined by DEFAULT_THROTTLE_RATES["login"] in settings (5/minute).
+    """
+
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "login"
 
 
 class RegisterView(generics.CreateAPIView):
@@ -21,3 +35,4 @@ class MeView(generics.RetrieveUpdateAPIView):
 
     def get_object(self) -> User:
         return self.request.user
+

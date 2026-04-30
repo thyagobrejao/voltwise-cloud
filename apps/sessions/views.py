@@ -1,7 +1,5 @@
 from rest_framework import mixins, permissions, viewsets
 
-from apps.common.permissions import IsOrganizationMember
-
 from .models import ChargingSession
 from .serializers import ChargingSessionSerializer
 
@@ -20,13 +18,16 @@ class ChargingSessionViewSet(
     """
 
     serializer_class = ChargingSessionSerializer
-    permission_classes = [permissions.IsAuthenticated, IsOrganizationMember]
+    permission_classes = [permissions.IsAuthenticated]
     filterset_fields = ["status", "charger"]
     search_fields = ["charger__name", "charger__identifier"]
     ordering_fields = ["start_time", "end_time", "energy_kwh", "status"]
 
     def get_queryset(self):
+        org = self.request.user.organization
+        if org is None:
+            return ChargingSession.objects.none()
         return (
-            ChargingSession.objects.filter(charger__organization=self.request.user.organization)
+            ChargingSession.objects.filter(charger__organization=org)
             .select_related("charger", "user")
         )
